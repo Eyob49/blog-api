@@ -57,7 +57,9 @@ func (s *PostStore) Update(id int, updated models.Post) (models.Post, bool) {
 	for i, post := range s.posts {
 		if post.ID == id {
 			updated.ID = id
+			updated.CreatedAt = post.CreatedAt
 			s.posts[i] = updated
+            
 			return updated, true
 		}
 	}
