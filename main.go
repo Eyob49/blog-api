@@ -8,21 +8,36 @@ import (
 	"time"
 )
 
+var posts []models.Post
+var nextID = 1
+
 func main() {
 	http.HandleFunc("/posts", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
-			// For demonstration, we will return a static list of posts
-			posts := []models.Post{
-				{ID: 1, Title: "First Post", Content: "This is the first post.", CreatedAt: time.Now()},
-				{ID: 2, Title: "Second Post", Content: "This is the second post.", CreatedAt: time.Now()},
-			}
+			// By return if the func NewPost is working
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(posts)
-		} else {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	}) // Register the handler for the /posts endpoint
+			return
+		} 
 
+		if r.Method == http.MethodPost {
+			var newPost models.Post
+			err := json.NewDecoder(r.Body).Decode(&newPost)
+			if err != nil {
+				http.Error(w, "Invalid request payload", http.StatusBadRequest)
+				return
+			}
+			newPost.ID = nextID
+            newPost.CreatedAt = time.Now()
+			nextID++
+			posts = append(posts, newPost)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			json.NewEncoder(w).Encode(newPost)
+            return
+		}
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}) // Register the handler for the /posts endpoint
 	log.Println("Server is running on http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil)) // Start the server on port 8080
 }
