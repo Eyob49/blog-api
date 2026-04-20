@@ -53,6 +53,28 @@ func main() {
             w.Header().Set("Content-Type", "application/json")
             w.WriteHeader(http.StatusCreated)
             json.NewEncoder(w).Encode(newPost)
+		case http.MethodPut:
+			if idStr == "" {
+				http.Error(w, "Post ID is required", http.StatusBadRequest)
+				return
+			}
+			var updatedPost models.Post
+			if err := json.NewDecoder(r.Body).Decode(&updatedPost); err != nil {
+				http.Error(w, "Invalid request payload", http.StatusBadRequest)
+				return
+			}
+			for i, post := range posts {
+				if idStr == strconv.Itoa(post.ID) {
+					updatedPost.ID = post.ID
+					updatedPost.CreatedAt = post.CreatedAt
+					posts[i] = updatedPost
+					w.Header().Set("Content-Type", "application/json")
+					json.NewEncoder(w).Encode(updatedPost)
+					return
+				}
+			}
+			http.Error(w, "Post not found", http.StatusNotFound)
+
         case http.MethodDelete:
 			if idStr == "" {
 				http.Error(w, "Post ID is required", http.StatusBadRequest)
@@ -66,7 +88,7 @@ func main() {
 				}
 			}
 			http.Error(w, "Post not found", http.StatusNotFound)
-
+        
 
         default:
             http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
