@@ -53,6 +53,20 @@ func main() {
             w.Header().Set("Content-Type", "application/json")
             w.WriteHeader(http.StatusCreated)
             json.NewEncoder(w).Encode(newPost)
+        case http.MethodDelete:
+			if idStr == "" {
+				http.Error(w, "Post ID is required", http.StatusBadRequest)
+				return
+			}
+			for i, post := range posts {
+				if idStr == strconv.Itoa(post.ID) {
+					posts = append(posts[:i], posts[i+1:]...)
+					w.WriteHeader(http.StatusNoContent)
+					return
+				}
+			}
+			http.Error(w, "Post not found", http.StatusNotFound)
+
 
         default:
             http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
