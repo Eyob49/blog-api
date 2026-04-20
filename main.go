@@ -6,24 +6,37 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 )
 
-var posts []models.Post
-var nextID = 1
+var (
+    posts []models.Post
+    nextID = 1
+    mu sync.RWMutex
+) 
+
 func main() {
     http.HandleFunc("/posts/", func(w http.ResponseWriter, r *http.Request) {
-        idStr := r.URL.Path[len("/posts/"):]
+        idStr := strings.TrimPrefix(r.URL.Path, "/posts/")
 
         switch r.Method {
         case http.MethodGet:
             // If the ID part is empty, they want all posts
+            mu.RLock()
             if idStr == "" {
                 w.Header().Set("Content-Type", "application/json")
                 json.NewEncoder(w).Encode(posts)
+                mu.RUnlock()
                 return
             }
-
+            // Bad request if ID is not a number
+            if id, err := strconv.Atoi(idStr); err != nil {
+                http.Error(w, "Invalid post ID", http.StatusBadRequest)
+                mu.RUnlock()
+                return
+            }
             // Otherwise, look for the specific post
             for _, post := range posts {
                 if idStr == strconv.Itoa(post.ID) {
@@ -53,6 +66,7 @@ func main() {
             w.Header().Set("Content-Type", "application/json")
             w.WriteHeader(http.StatusCreated)
             json.NewEncoder(w).Encode(newPost)
+
 		case http.MethodPut:
 			if idStr == "" {
 				http.Error(w, "Post ID is required", http.StatusBadRequest)
