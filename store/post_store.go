@@ -36,3 +36,25 @@ func (s *PostStore) GetAll() ([]models.Post, error) {
 	}
 	return posts, nil
 } 
+
+// CREATE
+func (s *PostStore) Create(post models.Post) (models.Post, error) {
+	query := `
+	    INSERT INTO posts (title, content, created_at)
+		VALUES ($1, $2, $3)
+		RETURNING id;
+	`
+	err := s.db.QueryRow(
+		context.Background(),
+		query,
+		post.Title,
+		post.Content,
+		post.CreatedAt,
+	).Scan(&post.ID)
+
+	if err != nil {
+		return models.Post{}, err
+	}
+
+	return post, nil
+}

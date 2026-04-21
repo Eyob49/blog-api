@@ -1,11 +1,13 @@
 package main
 
 import (
+	"blog-api/models"
 	"blog-api/store"
 	"context"
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -24,15 +26,43 @@ func main() {
     postStore := store.NewPostStore(conn)
 
     http.HandleFunc("/posts", func(w http.ResponseWriter, r *http.Request) {
-        posts, err := postStore.GetAll()
+
+        switch r.Method {
+
+        case http.MethodGet:
+            posts, err := postStore.GetAll()
         if err != nil {
             http.Error(w, "Internal server error", http.StatusInternalServerError)
             return
         }
         json.NewEncoder(w).Encode(posts)
+         
+        case http.MethodPost:
+            var p models.Post
+
+            err := json.NewDecoder(r.Body).Decode(&p)
+            if err != nil {
+                http.Error(w, "Invalid request", http.StatusBadRequest)
+                return
+            }
+
+            p.CreatedAt = time.Now()
+
+            createdPost, err := postStore.Create(p)
+            if err != nil {
+                http.Error(w, "Failed to create post", http.StatusInternalServerError)
+                return
+            }
+            w.WriteHeader(http.StatusCreated)
+            json.NewEncoder(w).Encode(createdPost)
+
+        default:
+            http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+        }
+        
         
     })
-    //http.HandleFunc("/posts/", postsHandlerByID)
+   
 
     log.Println("Server is running on http://localhost:8080")
     log.Fatal(http.ListenAndServe(":8080", nil))
@@ -40,6 +70,3 @@ func main() {
 
 
 
-// func postsHandlerByID(w http.ResponseWriter, r *http.Request) {
-    
-// }
