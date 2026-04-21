@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -58,9 +60,39 @@ func main() {
 
         default:
             http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+        }  
+    })
+
+    http.HandleFunc("/posts/", func(w http.ResponseWriter, r *http.Request) {
+        
+        idStr := strings.TrimPrefix(r.URL.Path, "/posts/")
+
+        id, err := strconv.Atoi(idStr)
+        if err != nil {
+            http.Error(w, "Invalid post ID", http.StatusBadRequest)
+            return
         }
-        
-        
+
+        switch r.Method {
+
+        case http.MethodGet:
+            post, err := postStore.GetByID(id)
+
+            if err != nil {
+                if err == pgx.ErrNoRows{
+                    http.Error(w, "Post not found", http.StatusNotFound)
+                    return
+                } else {
+                    http.Error(w, "Internal server error", http.StatusInternalServerError)
+                }
+                return 
+            }
+            w.Header().Set("Content-Type", "application/json")
+            json.NewEncoder(w).Encode(post)
+
+        default:
+            http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+        }
     })
    
 
