@@ -113,7 +113,19 @@ func main() {
             w.Header().Set("Content-type", "application/json")
             json.NewEncoder(w).Encode(post)
 
+        case http.MethodDelete:
+            err := postStore.Delete(id)
 
+            if err != nil {
+                if err == pgx.ErrNoRows {
+                    http.Error(w, "Post not found", http.StatusNotFound)
+                } else {
+                    http.Error(w, "Internal server error", http.StatusInternalServerError)
+                }
+                return
+            }
+
+            w.WriteHeader(http.StatusNoContent)
 
         default:
             http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

@@ -100,3 +100,23 @@ func (s *PostStore) Update(id int, updated models.Post) (models.Post, error) {
 
 }
 
+// DELETE
+func (s *PostStore) Delete(id int) error {
+	cmdTag, err := s.db.Exec(
+		context.Background(),
+		"DELETE FROM posts WHERE id = $1",
+		id,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	if cmdTag.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+
+	return nil
+
+}
+
