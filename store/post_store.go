@@ -2,80 +2,37 @@ package store
 
 import (
 	"blog-api/models"
-	"sync"
+	"context"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type PostStore struct {
-	mu sync.RWMutex
-	posts []models.Post
-	nextID int
+	db *pgx.Conn
 }
 
-func NewPostStore() *PostStore {
-	return &PostStore{
-		posts: []models.Post{},
-		nextID: 1,
+func NewPostStore(db *pgx.Conn) *PostStore {
+	return &PostStore{db: db}
+}
+
+// GET All 
+func (s *PostStore) GetAll() ([]models.Post, error) {
+	rows, err := s.db.Query(context.Background(), "SELECT id, title, content, created_at FROM posts")
+
+	if err != err {
+		return nil, err
 	}
-}
+	defer rows.Close()
 
-// ReadAll 
-func (s *PostStore) GetAll() []models.Post {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return append([]models.Post(nil), s.posts...)
+	var posts []models.Post
+
+	for rows.Next() {
+		var p models.Post
+		if err := rows.Scan(&p.ID, &p.Title, &p.Content, &p.CreatedAt); err != nil {
+			return nil, err
+
+		}
+		posts = append(posts, p)
+	}
+	return posts, nil
 } 
-
-// GET by ID 
-func (s *PostStore) GetByID(id int) (models.Post, bool){
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	for _,post := range s.posts {
-		if post.ID == id {
-			return post, true
-		}
-	}
-	return models.Post{}, false
-}
-
-// CREATE
-func (s *PostStore) Create(post models.Post) models.Post {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	post.ID = s.nextID
-	s.nextID++
-	s.posts = append(s.posts, post)
-	return post
-}
-
-// UPDATE
-func (s *PostStore) Update(id int, updated models.Post) (models.Post, bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-    
-	for i, post := range s.posts {
-		if post.ID == id {
-			updated.ID = id
-			updated.CreatedAt = post.CreatedAt
-			s.posts[i] = updated
-            
-			return updated, true
-		}
-	}
-	return models.Post{}, false
-}
-
-// DELETE
-func (s *PostStore) Delete(id int) bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	for i, post := range s.posts {
-		if post.ID == id {
-			s.posts = append(s.posts[:i], s.posts[i+1:]...)
-			return true
-		}
-	}
-	return false
-}
