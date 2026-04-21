@@ -36,6 +36,7 @@ func (s *PostStore) GetAll() ([]models.Post, error) {
 	}
 	return posts, nil
 } 
+
 // GET by ID
 func (s *PostStore) GetByID(id int) (models.Post, error) {
 	var p models.Post
@@ -69,5 +70,33 @@ func (s *PostStore) Create(post models.Post) (models.Post, error) {
 	}
 
 	return post, nil
+}
+
+// UPDATE 
+func (s *PostStore) Update(id int, updated models.Post) (models.Post, error) {
+
+	var p models.Post
+	
+	query := `
+
+	    UPDATE posts
+		SET title = $1, content = $2
+		WHERE id = $3
+		RETURNING id, title, content, created_at;
+	`
+	err := s.db.QueryRow(
+		context.Background(),
+		query,
+		updated.Title,
+		updated.Content,
+		id,
+	).Scan(&p.ID, &p.Title, &p.Content, &p.CreatedAt)
+
+	if err != nil {
+		return models.Post{}, err
+	}
+
+	return p, nil
+
 }
 

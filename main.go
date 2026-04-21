@@ -90,6 +90,31 @@ func main() {
             w.Header().Set("Content-Type", "application/json")
             json.NewEncoder(w).Encode(post)
 
+        case http.MethodPut:
+            var updated models.Post
+
+            err := json.NewDecoder(r.Body).Decode(&updated)
+            if err != nil {
+                http.Error(w, "Invalid request", http.StatusBadRequest)
+                return
+            }
+
+
+            post, err := postStore.Update(id, updated)
+            if err != nil {
+                if err == pgx.ErrNoRows{
+                    http.Error(w, "Post Not Foud", http.StatusNotFound)
+                } else {
+                    http.Error(w, "Internal server error", http.StatusInternalServerError)
+                }
+                return
+            }
+
+            w.Header().Set("Content-type", "application/json")
+            json.NewEncoder(w).Encode(post)
+
+
+
         default:
             http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
         }
