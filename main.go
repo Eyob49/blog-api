@@ -15,16 +15,16 @@ import (
 
 func main() {
     // Connect to DB
-    conn, err := pgx.Connect(context.Background(), "postgres://postgres:postgres@49@localhost:5432/blogdb")
+    conn, err := pgx.Connect(context.Background(), "postgres://postgres:postgres%4049@localhost:5432/blogdb")
     if err != nil {
     log.Fatal(err)
     }
     defer conn.Close(context.Background())
 
     // Initialize store with DB
-    store := store.NewPostStore(conn)
+    postStore := store.NewPostStore(conn)
 
-    service := services.NewPostService(store)
+    service := services.NewPostService(postStore)
     handler := handlers.NewPostHandler(service) 
 
     
