@@ -28,17 +28,17 @@ func (h *PostHandler) Posts(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		posts, err := h.service.GetAll()
 	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		writeError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
-	json.NewEncoder(w).Encode(posts)
+	writeJSON(w, http.StatusOK, posts)
 	 
 	case http.MethodPost:
 		var p models.Post
 
 		err := json.NewDecoder(r.Body).Decode(&p)
 		if err != nil {
-			http.Error(w, "Invalid request", http.StatusBadRequest)
+			writeError(w, http.StatusBadRequest, "Invalid request")
 			return
 		}
 
@@ -46,14 +46,18 @@ func (h *PostHandler) Posts(w http.ResponseWriter, r *http.Request) {
 
 		createdPost, err := h.service.Create(p)
 		if err != nil {
-			http.Error(w, "Failed to create post", http.StatusInternalServerError)
+			if _ ,ok := err.(*services.ValidationError); ok {
+				writeError(w, http.StatusBadRequest, err.Error())
+			} else {
+				writeError(w, http.StatusInternalServerError, "Failed to create post")
+			}
+			
 			return
 		}
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(createdPost)
+		writeJSON(w, http.StatusCreated, createdPost)
 
 	default:
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
 	}  
 }
 
@@ -63,7 +67,7 @@ func(h *PostHandler)  PostByID(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid post ID", http.StatusBadRequest)
+		writeError(w, http.StatusBadRequest, "Invalid post ID")
 		return
 	}
 
@@ -73,22 +77,21 @@ func(h *PostHandler)  PostByID(w http.ResponseWriter, r *http.Request) {
 		post, err := h.service.GetByID(id)
 		if err != nil {
 			if err == pgx.ErrNoRows{
-				http.Error(w, "Post not found", http.StatusNotFound)
+				writeError(w, http.StatusNotFound, "Post not found")
 				return
 			} else {
-				http.Error(w, "Internal server error", http.StatusInternalServerError)
+				writeError(w, http.StatusInternalServerError, "Internal server error")
 			}
 			return 
 		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(post)
+		writeJSON(w, http.StatusOK, post)
 
 	case http.MethodPut:
 		var updated models.Post
 
 		err := json.NewDecoder(r.Body).Decode(&updated)
 		if err != nil {
-			http.Error(w, "Invalid request", http.StatusBadRequest)
+			writeError(w, http.StatusBadRequest, "Invalid request")
 			return
 		}
 
@@ -96,23 +99,22 @@ func(h *PostHandler)  PostByID(w http.ResponseWriter, r *http.Request) {
 		post, err := h.service.Update(id, updated)
 		if err != nil {
 			if err == pgx.ErrNoRows{
-				http.Error(w, "Post Not Foud", http.StatusNotFound)
+				writeError(w, http.StatusNotFound, "Post not found")
 			} else {
-				http.Error(w, "Internal server error", http.StatusInternalServerError)
+				writeError(w, http.StatusInternalServerError, "Internal server error")
 			}
 			return
 		}
 
-		w.Header().Set("Content-type", "application/json")
-		json.NewEncoder(w).Encode(post)
+		writeJSON(w, http.StatusOK, post)
 
 	case http.MethodDelete:
 		err := h.service.Delete(id)
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				http.Error(w, "Post not found", http.StatusNotFound)
+				writeError(w, http.StatusNotFound, "Post not found")
 			} else {
-				http.Error(w, "Internal server error", http.StatusInternalServerError)
+				writeError(w, http.StatusInternalServerError, "Internal server error")
 			}
 			return
 		}
@@ -120,7 +122,7 @@ func(h *PostHandler)  PostByID(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 
 	default:
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
 	}
 }
 
