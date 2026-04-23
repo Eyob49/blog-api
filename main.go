@@ -7,15 +7,28 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/joho/godotenv"
 )
 
 
 
 func main() {
+
+
+    err := godotenv.Load()
+	if err != nil {
+		log.Println("No .env file found, using system env")
+	}
+
+	connStr := os.Getenv("DATABASE_URL")
+	if connStr == "" {
+		log.Fatal("DATABASE_URL is not set")
+    }
     // Connect to DB
-    conn, err := pgx.Connect(context.Background(), "postgres://postgres:postgres%4049@localhost:5432/blogdb")
+    conn, err := pgx.Connect(context.Background(), connStr)
     if err != nil {
     log.Fatal(err)
     }
@@ -34,6 +47,7 @@ func main() {
     log.Println("Server is running on http://localhost:8080")
     log.Fatal(http.ListenAndServe(":8080", nil))
 }
+
 
 
 
