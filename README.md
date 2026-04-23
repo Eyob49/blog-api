@@ -1,4 +1,4 @@
-# Blog API (Go + PostgreSQL)
+# Blog API (Go + PostgreSQL) v1
 
 A RESTful blog API built with Go and PostgreSQL, supporting full CRUD operations with clean layered architecture and validation.
 
@@ -72,3 +72,17 @@ Environment-based configuration
 📌 Notes
 Ensure PostgreSQL is running before starting the app
 .env file is required for database connection
+
+## Future Improvements
+
+This project currently represents **Version 1 (V1)** of the API.
+
+Planned improvements for V2:
+
+- Authentication & Authorization (JWT-based login system)
+- User management (registration, profiles, roles)
+- Post ownership (users create and manage their own posts)
+- Pagination and filtering for posts
+- Structured logging and better observability
+- Automated testing (unit + integration tests)
+- Deployment (Docker + cloud hosting)
